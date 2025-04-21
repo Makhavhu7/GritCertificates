@@ -26,56 +26,34 @@
     <section class="lookup-hero">
         <div class="container">
             <h1>Certificate Lookup</h1>
-            <p>Enter your GL number below to retrieve your certificate</p>
+            <p>Scan the QR code below using the webcam to view your certificates</p>
         </div>
     </section>
 
     <section class="lookup-form">
         <div class="container">
-            <div class="form-container">
-                <div class="form-header">
-                    <i class="fas fa-search"></i>
-                    <h2>Find Your Certificate</h2>
-                </div>
-                <form id="lookupForm">
-                    <div class="form-group">
-                        <label for="glNumber">GL Number</label>
-                        <input type="text" id="glNumber" name="glNumber" placeholder="e.g., GL-001" required>
-                    </div>
-                    <button type="submit" class="btn primary-btn">Look Up Certificate</button>
-                </form>
-                <div class="qr-option">
-                    <p>Or view your certificate QR code</p>
-                    <button id="scanQrBtn" class="btn secondary-btn"><i class="fas fa-qrcode"></i> View QR Code</button>
-                </div>
+            <div class="qr-option">
+                <p>Your Certificate QR Code:</p>
+                <div id="lookupQrCode" class="qr-code-display"></div>
             </div>
-            
+
+            <div id="webcamContainer" class="webcam-container hidden">
+                <div class="webcam-header">
+                    <h2>Scan QR Code</h2>
+                    <button id="closeWebcam" class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="webcamCanvas" style="display: none;"></canvas>
+                <p id="webcamMessage">Scanning for QR code...</p>
+            </div>
+
             <div id="certificateResult" class="certificate-result hidden">
                 <div class="result-header">
                     <h2>Certificate Found</h2>
                     <button id="closeResult" class="close-btn"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="certificate-details">
-                    <div class="detail-group">
-                        <span class="detail-label">Name:</span>
-                        <span id="studentName" class="detail-value">John Doe</span>
-                    </div>
-                    <div class="detail-group">
-                        <span class="detail-label">Student Code:</span>
-                        <span id="studentCode" class="detail-value">12345</span>
-                    </div>
-                    <div class="detail-group">
-                        <span class="detail-label">GL Number:</span>
-                        <span id="resultGlNumber" class="detail-value">GL-001</span>
-                    </div>
-                    <div class="detail-group">
-                        <span class="detail-label">Status:</span>
-                        <span id="certificateStatus" class="detail-value status-pass">Passed with Distinction</span>
-                    </div>
-                    <div class="detail-group">
-                        <span class="detail-label">QR Code:</span>
-                        <div id="qrCodeDisplay" class="qr-code-display"></div>
-                    </div>
+                    <!-- Certificate details will be populated here -->
                 </div>
                 <div class="certificate-actions">
                     <button id="viewCertificate" class="btn primary-btn"><i class="fas fa-eye"></i> View Certificate</button>
@@ -88,8 +66,8 @@
                     <i class="fas fa-exclamation-circle"></i>
                 </div>
                 <h2>Certificate Not Found</h2>
-                <p>We couldn't find a certificate with the GL number <span id="notFoundGlNumber">GL-000</span>.</p>
-                <p>Please check the GL number and try again, or contact support for assistance.</p>
+                <p>We couldn't find a certificate with the provided GL number <span id="notFoundGlNumber">GL-000</span>.</p>
+                <p>Please check the QR code or link and try again, or contact support for assistance.</p>
                 <button id="tryAgainBtn" class="btn primary-btn">Try Again</button>
             </div>
         </div>
@@ -102,21 +80,8 @@
                 <button id="closeViewer" class="close-btn"><i class="fas fa-times"></i></button>
             </div>
             <div class="certificate-frame">
-                <div id="certificateDisplay" class="certificate-display">
-                    <!-- Certificate will be displayed here -->
-                </div>
+                <div id="certificateDisplay" class="certificate-display"></div>
             </div>
-        </div>
-    </div>
-
-    <div id="qrCodeModal" class="qr-modal hidden">
-        <div class="qr-modal-content">
-            <div class="qr-modal-header">
-                <h3>Certificate QR Code</h3>
-                <button id="closeQrModal" class="close-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="qrModalDisplay" class="qr-modal-display"></div>
-            <p id="qrModalMessage" class="qr-modal-message"></p>
         </div>
     </div>
 
@@ -147,6 +112,8 @@
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="lookup.js"></script>
 </body>
 </html>

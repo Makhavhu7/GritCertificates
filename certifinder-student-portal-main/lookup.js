@@ -1,7 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
-    const lookupForm = document.getElementById('lookupForm');
-    const glNumberInput = document.getElementById('glNumber');
+    const lookupQrCode = document.getElementById('lookupQrCode');
+    const webcamContainer = document.getElementById('webcamContainer');
+    const webcam = document.getElementById('webcam');
+    const webcamCanvas = document.getElementById('webcamCanvas');
+    const webcamMessage = document.getElementById('webcamMessage');
+    const closeWebcamBtn = document.getElementById('closeWebcam');
     const certificateResult = document.getElementById('certificateResult');
     const certificateNotFound = document.getElementById('certificateNotFound');
     const closeResultBtn = document.getElementById('closeResult');
@@ -12,135 +16,196 @@ document.addEventListener('DOMContentLoaded', function() {
     const certificateViewer = document.getElementById('certificateViewer');
     const closeViewerBtn = document.getElementById('closeViewer');
     const certificateDisplay = document.getElementById('certificateDisplay');
-    const scanQrBtn = document.getElementById('scanQrBtn');
-    const qrCodeModal = document.getElementById('qrCodeModal');
-    const closeQrModal = document.getElementById('closeQrModal');
-    const qrModalDisplay = document.getElementById('qrModalDisplay');
-    const qrModalMessage = document.getElementById('qrModalMessage');
 
     // Google Apps Script web app URL
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxheTXaZNaL5NERN_JQZDtPM7kO-hkOFAz5KLuWHqDt1YmuPuszz09vg36LUO87sSb0/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxyiFwyEwVHH3ijw2eXQzi0y3YQ8wS0kgKLh7LVmuGYA22WxH9IjKsn_oAOyiQf1wm-/exec';
 
-    // Check URL for GL number query parameter
+    let stream = null;
+
+    // Check URL for GL number and scan parameter
     function checkUrlForGLNumber() {
         const urlParams = new URLSearchParams(window.location.search);
         const glNumber = urlParams.get('gl');
-        
+        const scan = urlParams.get('scan');
+
         if (glNumber) {
-            glNumberInput.value = glNumber;
-            lookupCertificate(glNumber);
+            updateLookupQrCode(glNumber);
+            if (scan === 'true') {
+                startWebcamScanner(glNumber);
+            } else {
+                lookupCertificate(glNumber);
+            }
+        } else {
+            certificateNotFound.classList.remove('hidden');
+            notFoundGlNumber.textContent = 'None';
+            lookupQrCode.innerHTML = '<p>No GL number provided. Please access this page via the link in your email.</p>';
         }
     }
 
-    // Handle form submission
-    lookupForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const glNumber = glNumberInput.value.trim();
-        lookupCertificate(glNumber);
-    });
+    // Update QR code on lookup page
+    function updateLookupQrCode(glNumber) {
+        lookupQrCode.innerHTML = '';
+        const qrUrl = `${API_URL}?action=getCertificatesByGL&glNumber=${glNumber}`;
+        new QRCode(lookupQrCode, {
+            text: qrUrl,
+            width: 150,
+            height: 150
+        });
+    }
+
+    // Start webcam scanner
+    async function startWebcamScanner(glNumber) {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            webcam.srcObject = stream;
+            webcamContainer.classList.remove('hidden');
+            webcamMessage.textContent = 'Scanning for QR code...';
+            scanQrCode(glNumber);
+        } catch (error) {
+            console.error('Error accessing webcam:', error);
+            webcamMessage.textContent = 'Error accessing webcam. Please ensure camera access is allowed.';
+        }
+    }
+
+    // Stop webcam
+    function stopWebcam() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        webcamContainer.classList.add('hidden');
+        webcamMessage.textContent = '';
+    }
+
+    // Scan QR code using jsQR
+    function scanQrCode(glNumber) {
+        const context = webcamCanvas.getContext('2d');
+        webcamCanvas.width = webcam.videoWidth;
+        webcamCanvas.height = webcam.videoHeight;
+
+        function tick() {
+            if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
+                context.drawImage(webcam, 0, 0, webcamCanvas.width, webcamCanvas.height);
+                const imageData = context.getImageData(0, 0, webcamCanvas.width, webcamCanvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (code) {
+                    stopWebcam();
+                    handleScannedQrCode(code.data, glNumber);
+                    return;
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    // Handle scanned QR code
+    async function handleScannedQrCode(qrUrl, glNumber) {
+        try {
+            const response = await fetch(qrUrl);
+            const certificates = await response.json();
+
+            if (certificates.error) {
+                webcamMessage.textContent = `No certificates found for GL number: ${glNumber}`;
+                certificateNotFound.classList.remove('hidden');
+                notFoundGlNumber.textContent = glNumber;
+                return;
+            }
+
+            displayCertificates(certificates);
+        } catch (error) {
+            console.error('Error fetching certificates from QR code:', error);
+            webcamMessage.textContent = 'Error fetching certificates. Please try again.';
+            certificateNotFound.classList.remove('hidden');
+            notFoundGlNumber.textContent = glNumber;
+        }
+    }
 
     // Lookup certificate function
     async function lookupCertificate(glNumber) {
         certificateResult.classList.add('hidden');
         certificateNotFound.classList.add('hidden');
-        const qrCodeDisplay = document.getElementById('qrCodeDisplay');
-        if (qrCodeDisplay) qrCodeDisplay.innerHTML = '';
 
         try {
-            const response = await fetch(`${API_URL}?action=lookup&glNumber=${glNumber}`);
-            const cert = await response.json();
+            const response = await fetch(`${API_URL}?action=getCertificatesByGL&glNumber=${glNumber}`);
+            const certificates = await response.json();
 
-            if (cert.error) {
+            if (certificates.error) {
                 notFoundGlNumber.textContent = glNumber;
                 certificateNotFound.classList.remove('hidden');
-                console.log(`No certificate found for GL number: ${glNumber}`);
+                console.log(`No certificates found for GL number: ${glNumber}`);
                 return false;
             }
 
-            document.getElementById('studentName').textContent = cert.studentName;
-            document.getElementById('studentCode').textContent = cert.studentCode;
-            document.getElementById('resultGlNumber').textContent = cert.glNumber;
-            document.getElementById('certificateStatus').textContent = cert.status;
-
-            const statusElement = document.getElementById('certificateStatus');
-            if (cert.status === 'Passed with Distinction') {
-                statusElement.className = 'detail-value status-pass';
-                statusElement.style.color = '#34a853';
-            } else {
-                statusElement.className = 'detail-value status-pass';
-                statusElement.style.color = '#1a73e8';
-            }
-
-            // Use backend's QR code URL
-            if (qrCodeDisplay) {
-                const response = await fetch(`${API_URL}?action=getAllCertificates`);
-                const allCerts = await response.json();
-                const certData = allCerts.find(c => c.glNumber === glNumber);
-                if (certData && certData.qrCode) {
-                    qrCodeDisplay.innerHTML = `<img src="${certData.qrCode}" width="100" alt="QR Code">`;
-                } else {
-                    qrCodeDisplay.innerHTML = '<span>QR Code not generated</span>';
-                }
-            }
-
-            certificateResult.classList.remove('hidden');
-            console.log(`Certificate found for GL number: ${glNumber}`);
+            displayCertificates(certificates);
             return true;
         } catch (error) {
-            console.error('Error fetching certificate:', error);
+            console.error('Error fetching certificates:', error);
             notFoundGlNumber.textContent = glNumber;
             certificateNotFound.classList.remove('hidden');
             return false;
         }
     }
 
-    // View QR code button
-    scanQrBtn.addEventListener('click', async function() {
-        const glNumber = glNumberInput.value.trim();
-        qrModalDisplay.innerHTML = '';
-        qrModalMessage.textContent = '';
+    // Display multiple certificates
+    function displayCertificates(certificates) {
+        certificateResult.classList.remove('hidden');
+        certificateNotFound.classList.add('hidden');
+        const detailsContainer = document.querySelector('.certificate-details');
+        detailsContainer.innerHTML = '';
 
-        if (!glNumber) {
-            qrModalMessage.textContent = 'Please enter a GL number to view the QR code.';
-            qrCodeModal.classList.remove('hidden');
-            return;
-        }
+        const cert = certificates[0]; // Use first certificate for basic info
+        detailsContainer.innerHTML = `
+            <div class="detail-group">
+                <span class="detail-label">Name:</span>
+                <span class="detail-value">${cert.firstName} ${cert.lastName}</span>
+            </div>
+            <div class="detail-group">
+                <span class="detail-label">Student Code:</span>
+                <span class="detail-value">${cert.studentCode}</span>
+            </div>
+            <div class="detail-group">
+                <span class="detail-label">GL Number:</span>
+                <span class="detail-value">${cert.glNumber}</span>
+            </div>
+        `;
 
-        try {
-            const response = await fetch(`${API_URL}?action=lookup&glNumber=${glNumber}`);
-            const cert = await response.json();
+        const certList = document.createElement('div');
+        certList.className = 'certificate-list';
+        certificates.forEach((cert, index) => {
+            const certItem = document.createElement('div');
+            certItem.className = 'certificate-item';
+            certItem.innerHTML = `
+                <div class="detail-group">
+                    <span class="detail-label">Certificate ${index + 1} Status:</span>
+                    <span class="detail-value status-pass">${cert.status}</span>
+                </div>
+                <div class="detail-group">
+                    <span class="detail-label">Certificate Link:</span>
+                    <a href="${cert.certificate}" target="_blank">View Certificate ${index + 1}</a>
+                </div>
+            `;
+            certList.appendChild(certItem);
+        });
+        detailsContainer.appendChild(certList);
 
-            if (cert.error) {
-                qrModalMessage.textContent = `No certificate found for GL number: ${glNumber}`;
-                qrCodeModal.classList.remove('hidden');
-                console.log(`No certificate found for GL number: ${glNumber}`);
-                return;
-            }
+        // Update action buttons
+        viewCertificateBtn.onclick = () => {
+            window.open(certificates[0].certificate, '_blank');
+        };
+        downloadCertificateBtn.onclick = () => {
+            certificates.forEach((cert, index) => {
+                const link = document.createElement('a');
+                link.href = cert.certificate;
+                link.download = `${cert.glNumber}_${index + 1}.pdf`;
+                link.click();
+            });
+        };
+    }
 
-            const allCertsResponse = await fetch(`${API_URL}?action=getAllCertificates`);
-            const allCerts = await allCertsResponse.json();
-            const certData = allCerts.find(c => c.glNumber === glNumber);
-            if (certData && certData.qrCode) {
-                qrModalDisplay.innerHTML = `<img src="${certData.qrCode}" width="200" alt="QR Code">`;
-                qrModalMessage.textContent = `QR Code for ${cert.studentName} (${glNumber})`;
-            } else {
-                qrModalMessage.textContent = `QR Code not generated for ${glNumber}`;
-            }
-            qrCodeModal.classList.remove('hidden');
-            console.log(`Displayed QR code for GL number: ${glNumber}`);
-        } catch (error) {
-            console.error('Error fetching QR code:', error);
-            qrModalMessage.textContent = `Error fetching QR code for GL number: ${glNumber}`;
-            qrCodeModal.classList.remove('hidden');
-        }
-    });
-
-    // Close QR modal
-    closeQrModal.addEventListener('click', function() {
-        qrCodeModal.classList.add('hidden');
-        qrModalDisplay.innerHTML = '';
-        qrModalMessage.textContent = '';
-    });
+    // Close webcam
+    closeWebcamBtn.addEventListener('click', stopWebcam);
 
     // Close result button
     closeResultBtn.addEventListener('click', function() {
@@ -150,47 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Try again button
     tryAgainBtn.addEventListener('click', function() {
         certificateNotFound.classList.add('hidden');
-        glNumberInput.value = '';
-        glNumberInput.focus();
-    });
-
-    // View certificate
-    viewCertificateBtn.addEventListener('click', async function() {
-        const glNumber = document.getElementById('resultGlNumber').textContent;
-        try {
-            const response = await fetch(`${API_URL}?action=lookup&glNumber=${glNumber}`);
-            const cert = await response.json();
-
-            if (cert.certificate) {
-                window.open(cert.certificate, '_blank');
-            } else {
-                alert('Certificate file not found.');
-            }
-        } catch (error) {
-            console.error('Error viewing certificate:', error);
-            alert('Error viewing certificate.');
-        }
-    });
-
-    // Download certificate
-    downloadCertificateBtn.addEventListener('click', async function() {
-        const glNumber = document.getElementById('resultGlNumber').textContent;
-        try {
-            const response = await fetch(`${API_URL}?action=lookup&glNumber=${glNumber}`);
-            const cert = await response.json();
-
-            if (cert.certificate) {
-                const link = document.createElement('a');
-                link.href = cert.certificate;
-                link.download = `${glNumber}.pdf`;
-                link.click();
-            } else {
-                alert('Certificate file not found.');
-            }
-        } catch (error) {
-            console.error('Error downloading certificate:', error);
-            alert('Error downloading certificate.');
-        }
+        window.location.href = 'lookup.html';
     });
 
     // Close certificate viewer

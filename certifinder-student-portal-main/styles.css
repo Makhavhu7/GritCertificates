@@ -463,10 +463,6 @@ footer {
     gap: 15px;
 }
 
-/* Certificate Not Found Styles */
-.certificate-not-found {
-    text-align: center;
-}
 
 .not-found-icon {
     font-size: 3rem;
@@ -1220,4 +1216,116 @@ footer {
     border: none;
     font-size: 18px;
     cursor: pointer;
+}
+
+
+/* Existing styles remain unchanged, add or update the following */
+
+/* QR Code Display */
+.qr-option {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.qr-code-display {
+    margin-top: 10px;
+    display: inline-block;
+}
+
+/* Webcam Container */
+.webcam-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 20px auto;
+    text-align: center;
+}
+
+.webcam-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#webcam {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 4px;
+}
+
+#webcamMessage {
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+/* Certificate Result */
+.certificate-result {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.certificate-details {
+    margin-bottom: 20px;
+}
+
+.detail-group {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.detail-label {
+    font-weight: bold;
+    width: 150px;
+}
+
+.detail-value {
+    flex: 1;
+}
+
+.certificate-list {
+    margin-top: 20px;
+}
+
+.certificate-item {
+    border-top: 1px solid #eee;
+    padding: 10px 0;
+}
+
+.certificate-item:first-child {
+    border-top: none;
+}
+
+.certificate-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.certificate-not-found {
+    text-align: center;
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.not-found-icon {
+    font-size: 48px;
+    color: #e74c3c;
+    margin-bottom: 20px;
 }
