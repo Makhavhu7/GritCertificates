@@ -62,7 +62,7 @@
             const certificateList = document.getElementById('certificateList');
             const errorMessage = document.getElementById('errorMessage');
             const loadingMessage = document.getElementById('loadingMessage');
-            const API_URL = 'https://script.google.com/macros/s/AKfycbxA8Qb-LqZKphEozZPTupaJOaUB1Qx-s6aULcU7L4QlnVirsqKz_9kN-l0dOM_DKkg/exec';
+            const API_URL = 'https://script.google.com/macros/s/AKfycbwPUe2u4B-kBEFvDOWIFK570gS_XPrXoKUrGWJ8VtangkByOzdMTjukJAo5Hfx7--uN/exec';
 
             // Get GL number from URL
             const urlParams = new URLSearchParams(window.location.search);
@@ -102,13 +102,14 @@
                 certificates.forEach((cert, index) => {
                     const certItem = document.createElement('div');
                     certItem.className = 'certificate-item';
+                    const downloadUrl = cert.certificate.replace('/view?usp=sharing', '/uc?export=download');
                     certItem.innerHTML = `
                         <p><strong>Certificate ${index + 1}</strong></p>
                         <p>Name: ${cert.firstName} ${cert.lastName}</p>
                         <p>GL Number: ${cert.glNumber}</p>
                         <p>Status: ${cert.status}</p>
                         <p><a href="${cert.certificate}" target="_blank">View Certificate</a></p>
-                        <p><a href="${cert.certificate}" download="${cert.glNumber}_${index + 1}.pdf">Download Certificate</a></p>
+                        <p><a href="${downloadUrl}" download="${cert.glNumber}_${index + 1}.pdf">Download Certificate</a></p>
                     `;
                     certificateList.appendChild(certItem);
                 });
