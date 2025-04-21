@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportDataBtn = document.getElementById('exportDataBtn');
     const qrCodeModal = document.getElementById('qrCodeModal');
   
-    const API_URL = 'https://script.google.com/macros/s/AKfycbypHx5_k1PDoFSlNQx85O23qaPLAWUZmHEb7d5Akng3jGhQR_uesOexRz-THrAygcCe/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxA8Qb-LqZKphEozZPTupaJOaUB1Qx-s6aULcU7L4QlnVirsqKz_9kN-l0dOM_DKkg/exec';
   
     let certificates = [];
   

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+/*document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
     const lookupQrCode = document.getElementById('lookupQrCode');
     const errorMessage = document.getElementById('errorMessage');
@@ -33,3 +33,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check URL on page load
     checkUrlForGLNumber();
 });
+
+*/
