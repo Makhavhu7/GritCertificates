@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportDataBtn = document.getElementById('exportDataBtn');
     const qrCodeModal = document.getElementById('qrCodeModal');
   
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxA8Qb-LqZKphEozZPTupaJOaUB1Qx-s6aULcU7L4QlnVirsqKz_9kN-l0dOM_DKkg/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwPUe2u4B-kBEFvDOWIFK570gS_XPrXoKUrGWJ8VtangkByOzdMTjukJAo5Hfx7--uN/exec';
   
     let certificates = [];
   
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (filteredCertificates.length === 0) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 7;
+        cell.colSpan = 5;
         cell.style.textAlign = 'center';
         cell.textContent = certificates.length === 0 
           ? 'No certificates found in Google Drive. Upload PDFs to the Drive folder.'
@@ -155,29 +155,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const glCell = document.createElement('td');
         glCell.textContent = cert.glNumber || 'N/A';
         row.appendChild(glCell);
-        const codeCell = document.createElement('td');
-        codeCell.textContent = cert.studentCode || 'N/A';
-        row.appendChild(codeCell);
         const nameCell = document.createElement('td');
         nameCell.textContent = `${cert.firstName || ''} ${cert.lastName || ''}`.trim() || 'N/A';
         row.appendChild(nameCell);
+        const emailCell = document.createElement('td');
+        emailCell.textContent = cert.email || 'N/A';
+        row.appendChild(emailCell);
         const statusCell = document.createElement('td');
         statusCell.textContent = cert.status || 'N/A';
         statusCell.style.color = cert.status === 'Passed with Distinction' ? 'var(--success-color)' : 'var(--primary-color)';
         statusCell.style.fontWeight = '500';
         row.appendChild(statusCell);
-        const certCell = document.createElement('td');
-        certCell.innerHTML = cert.certificate 
-          ? `<a href="${cert.certificate}" target="_blank">${cert.certificate.split('/').pop()}</a>` 
-          : 'Not Uploaded';
-        row.appendChild(certCell);
-        const qrCell = document.createElement('td');
-        const qrStatus = document.createElement('span');
-        qrStatus.innerHTML = cert.qrCode 
-          ? `<img src="${cert.qrCode}" width="50" alt="QR Code">` 
-          : 'Not Generated';
-        qrCell.appendChild(qrStatus);
-        row.appendChild(qrCell);
         const actionsCell = document.createElement('td');
         actionsCell.className = 'table-actions';
         const viewBtn = document.createElement('button');
@@ -223,8 +211,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (cert) {
         document.getElementById('qrCodeStudentName').textContent = `${cert.firstName} ${cert.lastName}`;
         document.getElementById('qrGlNumber').textContent = cert.glNumber;
-        const lookupURL = `${window.location.origin}${window.location.pathname.replace('admin.html', '')}lookup.html?gl=${cert.glNumber}`;
-        document.getElementById('qrCodeLink').textContent = lookupURL;
+        const scanUrl = `${window.location.origin}/scan.html?gl=${cert.glNumber}`;
+        document.getElementById('qrCodeLink').textContent = scanUrl;
         const qrContainer = document.getElementById('qrCodeDisplay');
         qrContainer.innerHTML = cert.qrCode ? `<img src="${cert.qrCode}" width="200" alt="QR Code">` : '<span>QR Code not generated</span>';
         qrCodeModal.classList.remove('hidden');
@@ -307,4 +295,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   
     searchCertificates.addEventListener('input', renderCertificatesTable);
-  });
+});
