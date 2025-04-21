@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Certificate QR Code - CertiFinder</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .scan-container {
+            text-align: center;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #webcam {
+            width: 100%;
+            max-width: 400px;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        #webcamMessage {
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        .certificate-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .certificate-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .certificate-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="scan-container">
+        <h2>Scan QR Code</h2>
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="webcamCanvas" style="display: none;"></canvas>
+        <p id="webcamMessage">Scanning for QR code...</p>
+        <div id="certificateList" class="certificate-list"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const webcam = document.getElementById('webcam');
+            const webcamCanvas = document.getElementById('webcamCanvas');
+            const webcamMessage = document.getElementById('webcamMessage');
+            const certificateList = document.getElementById('certificateList');
+            const API_URL = 'https://script.google.com/macros/s/AKfycbypHx5_k1PDoFSlNQx85O23qaPLAWUZmHEb7d5Akng3jGhQR_uesOexRz-THrAygcCe/exec';
+
+            let stream = null;
+
+            // Get GL number from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const glNumber = urlParams.get('gl');
+
+            if (!glNumber) {
+                webcamMessage.textContent = 'No GL number provided. Please use the email link.';
+                return;
+            }
+
+            // Start webcam
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                webcam.srcObject = stream;
+                scanQrCode();
+            } catch (error) {
+                console.error('Error accessing webcam:', error);
+                webcamMessage.textContent = 'Error accessing webcam. Please allow camera access.';
+            }
+
+            // Scan QR code
+            function scanQrCode() {
+                const context = webcamCanvas.getContext('2d');
+                webcamCanvas.width = webcam.videoWidth;
+                webcamCanvas.height = webcam.videoHeight;
+
+                function tick() {
+                    if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
+                        context.drawImage(webcam, 0, 0, webcamCanvas.width, webcamCanvas.height);
+                        const imageData = context.getImageData(0, 0, webcamCanvas.width, webcamCanvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                        if (code) {
+                            stopWebcam();
+                            handleScannedQrCode(code.data);
+                            return;
+                        }
+                    }
+                    requestAnimationFrame(tick);
+                }
+                requestAnimationFrame(tick);
+            }
+
+            // Stop webcam
+            function stopWebcam() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                webcam.style.display = 'none';
+            }
+
+            // Handle scanned QR code
+            async function handleScannedQrCode(qrUrl) {
+                try {
+                    // Verify QR code contains correct GL number
+                    const qrParams = new URLSearchParams(new URL(qrUrl).search);
+                    const qrGlNumber = qrParams.get('glNumber');
+
+                    if (qrGlNumber !== glNumber) {
+                        webcamMessage.textContent = 'Invalid QR code. Please scan the correct QR code for your GL number.';
+                        return;
+                    }
+
+                    const response = await fetch(`${API_URL}?action=getCertificatesByGL&glNumber=${glNumber}`);
+                    const certificates = await response.json();
+
+                    if (certificates.error) {
+                        webcamMessage.textContent = `No certificates found for GL number: ${glNumber}`;
+                        return;
+                    }
+
+                    displayCertificates(certificates);
+                } catch (error) {
+                    console.error('Error fetching certificates:', error);
+                    webcamMessage.textContent = 'Error fetching certificates. Please try again.';
+                }
+            }
+
+            // Display certificates
+            function displayCertificates(certificates) {
+                webcamMessage.textContent = '';
+                certificateList.innerHTML = '';
+                certificates.forEach((cert, index) => {
+                    const certItem = document.createElement('div');
+                    certItem.className = 'certificate-item';
+                    certItem.innerHTML = `
+                        <p><strong>Certificate ${index + 1}</strong></p>
+                        <p>Name: ${cert.firstName} ${cert.lastName}</p>
+                        <p>GL Number: ${cert.glNumber}</p>
+                        <p>Status: ${cert.status}</p>
+                        <p><a href="${cert.certificate}" target="_blank">View Certificate</a></p>
+                    `;
+                    certificateList.appendChild(certItem);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
